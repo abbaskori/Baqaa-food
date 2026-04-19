@@ -5,7 +5,8 @@
   "scripts": {
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "vercel-build": "pnpm --filter @workspace/baqaa-pos build"
   },
   "private": true,
   "packageManager": "pnpm@9.15.4",
