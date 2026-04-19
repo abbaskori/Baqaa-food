@@ -1,0 +1,92 @@
+Baqaa Fast-Food Billing System — Full Feature Prompt
+Build a Point of Sale (POS) billing system for a fast-food restaurant called “Baqaa Fast Food” using React + TypeScript + Tailwind CSS + shadcn/ui. All data is stored in localStorage (no backend needed). The app uses HashRouter for routing.
+
+Pages & Routes
+/ — Cashier Billing Screen (Main POS)
+/admin — Admin Panel (Menu & Shop Management)
+/analytics — Analytics Dashboard (Order History & Reports)
+Page 1: Cashier Billing Screen (/)
+Layout: Full-screen, split into two sections — Menu (left, 2/3 width on desktop) and Cart (right, 1/3 width). On mobile, they stack vertically.
+
+Menu Section:
+
+Category filter dropdown (default: “All Categories”)
+Grid of menu item cards (2 cols mobile, 3 cols desktop) showing: emoji icon, item name, price in ₹, and “Add” button
+Clicking a card or the Add button adds the item to the cart
+Cart Section (right sidebar):
+
+Customer Name field (required) — with auto-suggest from previously saved customers
+Phone Number field (optional, tel input) — auto-fills when selecting a returning customer
+Cart Items list — each item shows name, unit price, quantity controls (+/- buttons), remove button, and line total
+Discount Section:
+Dropdown: “No Discount”, “Percentage (%)”, “Rupees (₹)”
+When Percentage or Rupees is selected, an input field appears to enter the discount value
+Percentage discount caps at 100%, Rupees discount caps at subtotal
+Totals Display: Subtotal, Discount amount (in red, showing type), and bold Total
+Payment Method dropdown: Cash or Online
+Generate Bill button (disabled if cart is empty or no customer name)
+After Generate Bill — Receipt Screen:
+
+Full-screen receipt view with shop logo, name, address, contact
+Bill number, date/time, customer name, phone, payment method
+Items table: Item, Qty, Price, Amount
+Subtotal, Discount (if any), and Total
+“Thank You! Visit Again!” footer
+Three action buttons at the top (hidden on print):
+🖨️ Print — triggers window.print()
+📱 WhatsApp — opens WhatsApp with a formatted text bill (auto-fills customer phone with +91 prefix)
+✕ Close — returns to billing screen and resets cart
+Page 2: Admin Panel (/admin)
+Shop Info Management: Edit shop name, address, contact, GSTIN, logo
+Category Management: Add/delete categories
+Menu Item Management: Add/edit/delete items with name, price, category, and image
+Navigation buttons to go back to POS or Analytics
+Page 3: Analytics Dashboard (/analytics)
+Time Filter: Daily / Weekly / Monthly
+Stats Cards: Total Orders, Total Revenue, Cash payments (count + amount), Online payments (count + amount)
+Pie Chart: Payment method distribution (Cash vs Online) using Recharts
+Summary Statistics: Cash revenue, Online revenue, Average order value
+Order History Table: Bill No, Date, Customer Name, Phone, Items, Discount, Total, Payment Method
+CSV Export button to download filtered orders
+Reset Data button (with confirmation) to clear all orders, reset bill counter to 1001, and clear customer records
+Back button to return to POS
+Menu Categories & Items (Pre-loaded Default Data)
+12 categories with 70+ items:
+
+Starter: Popcorn (₹90), Peri Peri Popcorn (₹110), Chicken Kurkure (₹260), Chicken Wings (₹250), Chicken Cheese Popcorn (₹240)
+Burger: Chicken Burger (₹120), Safari Burger (₹130), Mexican Burger (₹130), Chili Cheese Burger (₹150), Baqaa Supreme Burger (₹240), Trinity Burger (₹220)
+Fries: Salted Fries (₹80), Peri Peri Fries (₹100), Cheese Fries (₹130), Peri Peri Cheese Fries (₹160), Chicken & Cheese Fries (₹220)
+Wraps: Crunchy Chicken Wrap (₹180), Mexican Chicken Wrap (₹180), Delight Chicken Wrap (₹200), Greek Chicken Wrap (₹190), Schezwan Wrap (₹200)
+Sizzlers: Chicken Hot Finger (₹340), Chicken Cheese Garlic (₹400), Korean Chicken (₹360), Dynamite Chicken (₹420), Hawaii Chicken (₹400)
+Mocktails & Beverages: Virgin Mojito (₹100), Blue Curacao (₹120), Green Apple (₹120), Strawberry Shake (₹140), Nutella Chocolate (₹190), Irish Cold Coffee (₹150)
+Veg Pizza: Mexican, BBQ, Supreme, Just Cheese, Italian — each in 8" and 10" sizes (₹250-₹420)
+Non Veg Pizza: Same varieties as veg but with chicken (₹290-₹480)
+Veg Club Sandwich: Rock & Roll (₹180), Thalaiva (₹160), Firangi (₹150), Zingat (₹180)
+Non Veg Club Sandwich: Rock & Roll (₹230), Thalaiva (₹210), Firangi (₹200), Zingat (₹230)
+Combos: Kids Combo (₹170), Value Pack (₹750), Budget (₹310), Basic (₹290), Party Pack (₹990), 5 in 1 Meal (₹460), Family Pack (₹2100)
+Add Ons: Cheese Dip (₹30), Mayo Dip (₹15), Jalapeno Dip (₹30), Cheese Burst 8" (₹100), Cheese Burst 10" (₹130)
+Each item uses an SVG emoji icon generated as a data URI (colored background with emoji).
+
+Data Model (localStorage)
+Shop Info: name, address, contact, gstin, logo path
+Categories: id, name, createdAt
+Menu Items: id, name, price, categoryId, image, createdAt
+Orders: id, billNumber, items[], subtotal, discountType (none/percentage/rupees), discountValue, discountAmount, cgst (0), sgst (0), total, paymentMethod, customerName, customerPhone, createdAt
+Customers: id, name, phone, createdAt, lastOrderDate (auto-saved from orders)
+Bill Counter: starts at 1001, auto-increments
+Data Version: for cache-busting when menu data changes
+Shop Details
+Name: Baqaa Fast Food
+Address: Shop no 15, Seventh Heaven Building, 100 feet Rd, Opp. Al Burooj, Makarba Rd, Juhapura, Ahmedabad, Gujarat-380055
+Contact: 9099881421
+No GST/Tax — total equals subtotal minus discount
+Design & UX
+Gradient backgrounds: orange-to-red for POS, purple-to-pink for analytics
+White cards with shadows, green for prices/totals, red for discounts
+Mobile-first responsive design with sm: breakpoints
+Active press scale effect on menu cards (active:scale-95)
+Customer name auto-suggest with dropdown showing name and phone
+All currency displayed in ₹ (Indian Rupees)
+Tech Stack
+React 18 + TypeScript
+Tailwind CSS + shadcn/ui

@@ -1,0 +1,22 @@
+packages:
+  "recharts": "For the analytics dashboard pie chart"
+  "framer-motion": "For smooth micro-interactions, page transitions, and card pop-ins"
+  "date-fns": "For elegant date and time formatting in orders and analytics"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without style conflicts"
+  "uuid": "For generating unique IDs for local storage entities"
+
+images:
+  - path: "artifacts/baqaa-pos/public/images/logo-placeholder.png"
+    description: "A playful, modern fast food logo featuring a stylized burger and fries in vibrant orange and red colors, transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/baqaa-pos/public/images/pos-bg.png"
+    description: "Abstract subtle warm gradient background in soft orange, amber, and peach with faint wavy patterns"
+    aspect_ratio: "16:9"
+  - path: "artifacts/baqaa-pos/public/images/analytics-bg.png"
+    description: "Abstract subtle cool gradient background in soft purple, pink, and violet with faint light leaks"
+    aspect_ratio: "16:9"
+
+notes:
+  - App relies purely on localStorage for persistence (no backend).
+  - Wouter is used with useHashLocation for compatibility across static hosting.
