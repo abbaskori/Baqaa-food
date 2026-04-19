@@ -1,7 +1,6 @@
 {
   "version": 2,
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/baqaa-pos run build && cp -r artifacts/baqaa-pos/dist ./dist",
-  "outputDirectory": "dist",
-  "framework": "vite"
+  "buildCommand": "pnpm --filter @workspace/baqaa-pos run build && mkdir -p dist && cp -r artifacts/baqaa-pos/dist/* ./dist/",
+  "outputDirectory": "dist"
 }
