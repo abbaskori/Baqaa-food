@@ -1,6 +1,6 @@
 {
   "version": 2,
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/baqaa-pos exec vite build --config vite.config.ts",
+  "buildCommand": "pnpm run v-build",
   "outputDirectory": "artifacts/baqaa-pos/dist"
 }
