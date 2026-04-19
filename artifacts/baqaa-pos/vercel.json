@@ -1,5 +1,5 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm run v-build",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "dist"
 }
