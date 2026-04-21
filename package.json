@@ -3,13 +3,18 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "build": "npm run typecheck && npm run build --workspaces --if-present",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "vercel-build": "pnpm --filter @workspace/baqaa-pos... build"
+    "typecheck": "npm run typecheck:libs && npm run typecheck --workspaces --if-present",
+    "vercel-build": "npm run build -w @workspace/baqaa-pos"
   },
   "private": true,
-  "packageManager": "pnpm@9.15.4",
+  "workspaces": [
+    "artifacts/*",
+    "lib/*",
+    "scripts"
+  ],
+  "packageManager": "npm@11.1.0",
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1"
