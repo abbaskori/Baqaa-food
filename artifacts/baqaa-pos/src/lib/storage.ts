@@ -305,11 +305,24 @@ export const StorageAPI = {
       const { data: customers } = await supabase.from('customers').select('*');
       const { data: settings } = await supabase.from('settings').select('*').eq('id', 'main').single();
 
-      // If cloud is empty but local has data, upload local to cloud
       const localCats = get<Category[]>(KEYS.CATEGORIES, []);
+
+      // CASE 1: Cloud is empty, but Local has data -> Migrate Local to Cloud
       if ((!cats || cats.length === 0) && localCats.length > 0) {
         console.log("Cloud empty, migrating local data...");
         StorageAPI.setCategories(localCats);
+        StorageAPI.setMenuItems(get<MenuItem[]>(KEYS.MENU_ITEMS, []));
+        return;
+      }
+
+      // CASE 2: Both Cloud and Local are empty -> Re-seed everything
+      if ((!cats || cats.length === 0) && localCats.length === 0) {
+        console.log("Everything empty, re-seeding default menu...");
+        // This will put SEED_DATA into LocalStorage
+        localStorage.removeItem(KEYS.VERSION); // Force re-seed
+        initializeStorage(); 
+        const freshLocalCats = get<Category[]>(KEYS.CATEGORIES, []);
+        StorageAPI.setCategories(freshLocalCats);
         StorageAPI.setMenuItems(get<MenuItem[]>(KEYS.MENU_ITEMS, []));
         return;
       }
