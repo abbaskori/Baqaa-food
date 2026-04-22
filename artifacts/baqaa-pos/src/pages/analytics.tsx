@@ -8,7 +8,8 @@ import { motion } from "framer-motion";
 
 export default function Analytics() {
   const { data: allOrders, resetData } = useOrders();
-  const [timeFilter, setTimeFilter] = useState<'daily'|'weekly'|'monthly'|'all'>('all');
+  const [timeFilter, setTimeFilter] = useState<'daily'|'weekly'|'monthly'|'all'|'custom'>('all');
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const orders = useMemo(() => {
     if(timeFilter === 'all') return allOrders;
@@ -17,9 +18,10 @@ export default function Analytics() {
       if(timeFilter === 'daily') return isToday(d);
       if(timeFilter === 'weekly') return isThisWeek(d);
       if(timeFilter === 'monthly') return isThisMonth(d);
+      if(timeFilter === 'custom') return format(d, 'yyyy-MM-dd') === selectedDate;
       return true;
     });
-  }, [allOrders, timeFilter]);
+  }, [allOrders, timeFilter, selectedDate]);
 
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -78,16 +80,28 @@ export default function Analytics() {
           </div>
           
           <div className="flex flex-wrap gap-2 md:gap-4 items-center">
-            <select 
-              value={timeFilter} 
-              onChange={e => setTimeFilter(e.target.value as any)}
-              className="px-4 py-2.5 bg-white dark:bg-card border border-border rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-accent/20 font-bold text-sm text-foreground"
-            >
-              <option value="daily">Today</option>
-              <option value="weekly">This Week</option>
-              <option value="monthly">This Month</option>
-              <option value="all">All Time</option>
-            </select>
+            <div className="flex gap-2">
+              <select 
+                value={timeFilter} 
+                onChange={e => setTimeFilter(e.target.value as any)}
+                className="px-4 py-2.5 bg-white dark:bg-card border border-border rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-accent/20 font-bold text-sm text-foreground"
+              >
+                <option value="daily">Today</option>
+                <option value="custom">Specific Day</option>
+                <option value="weekly">This Week</option>
+                <option value="monthly">This Month</option>
+                <option value="all">All Time</option>
+              </select>
+
+              {timeFilter === 'custom' && (
+                <input 
+                  type="date"
+                  value={selectedDate}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  className="px-4 py-2.5 bg-white dark:bg-card border border-border rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-accent/20 font-bold text-sm text-foreground"
+                />
+              )}
+            </div>
             <button onClick={exportCSV} className="px-5 py-2.5 bg-white dark:bg-card text-foreground border border-border rounded-xl font-bold text-sm hover:shadow-md transition-all">Export CSV</button>
             <button onClick={handleReset} className="px-5 py-2.5 bg-red-100 text-red-600 rounded-xl font-bold text-sm hover:bg-red-200 transition-all flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" /> Reset Data
