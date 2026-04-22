@@ -67,3 +67,11 @@ export function useCustomers() {
   const customers = useStorageData(StorageAPI.getCustomers);
   return { data: customers };
 }
+
+export function useSecuritySettings() {
+  const settings = useStorageData(StorageAPI.getSecuritySettings);
+  return { 
+    data: settings, 
+    update: StorageAPI.setSecuritySettings 
+  };
+}

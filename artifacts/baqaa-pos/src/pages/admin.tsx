@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
-import { useShopInfo, useCategories, useMenuItems } from "@/hooks/use-data";
-import { Plus, Trash2, Edit2, Check, X, Store, Tag, Pizza, Upload, Image } from "lucide-react";
+import { useShopInfo, useCategories, useMenuItems, useSecuritySettings } from "@/hooks/use-data";
+import { Plus, Trash2, Edit2, Check, X, Store, Tag, Pizza, Upload, Image, Shield, Key, Eye, EyeOff } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState<"shop" | "categories" | "items">("shop");
+  const [activeTab, setActiveTab] = useState<"shop" | "categories" | "items" | "security">("shop");
 
   return (
     <div className="flex-1 bg-gray-50 overflow-y-auto">
@@ -14,10 +14,11 @@ export default function Admin() {
             <h1 className="text-2xl font-black text-gray-900">Admin Panel</h1>
             <p className="text-sm text-gray-500 mt-0.5">Manage shop settings, categories, and menu items.</p>
           </div>
-          <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm gap-1">
-            <TabBtn active={activeTab === "shop"} onClick={() => setActiveTab("shop")} icon={<Store className="w-4 h-4" />} label="Shop Info" />
+          <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm gap-1 overflow-x-auto scrollbar-hide">
+            <TabBtn active={activeTab === "shop"} onClick={() => setActiveTab("shop")} icon={<Store className="w-4 h-4" />} label="Shop" />
             <TabBtn active={activeTab === "categories"} onClick={() => setActiveTab("categories")} icon={<Tag className="w-4 h-4" />} label="Categories" />
-            <TabBtn active={activeTab === "items"} onClick={() => setActiveTab("items")} icon={<Pizza className="w-4 h-4" />} label="Menu Items" />
+            <TabBtn active={activeTab === "items"} onClick={() => setActiveTab("items")} icon={<Pizza className="w-4 h-4" />} label="Menu" />
+            <TabBtn active={activeTab === "security"} onClick={() => setActiveTab("security")} icon={<Shield className="w-4 h-4" />} label="Security" />
           </div>
         </div>
 
@@ -25,6 +26,7 @@ export default function Admin() {
           {activeTab === "shop" && <ShopInfoTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "items" && <MenuItemsTab />}
+          {activeTab === "security" && <SecurityTab />}
         </div>
       </div>
     </div>
@@ -272,6 +274,94 @@ function MenuItemsTab() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab() {
+  const { data: security, update } = useSecuritySettings();
+  const [form, setForm] = useState(security);
+  const [showPins, setShowPins] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.adminPin.length !== 4 || form.staffPin.length !== 4) {
+      alert("PINs must be exactly 4 digits.");
+      return;
+    }
+    update(form);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div className="max-w-md space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-black text-lg text-gray-900">Security Settings</h3>
+          <p className="text-sm text-gray-500">Control access to your POS system.</p>
+        </div>
+        <button 
+          onClick={() => setShowPins(!showPins)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
+        >
+          {showPins ? <><EyeOff className="w-3.5 h-3.5" /> Hide</> : <><Eye className="w-3.5 h-3.5" /> Show</>}
+        </button>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        <Field label="Manager PIN (Full Access)">
+          <div className="relative">
+            <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              required 
+              type={showPins ? "text" : "password"} 
+              maxLength={4}
+              pattern="\d{4}"
+              value={form.adminPin} 
+              onChange={(e) => setForm({ ...form, adminPin: e.target.value.replace(/\D/g, '') })} 
+              className={`${inputCls} pl-10 tracking-[0.5em] font-black text-lg`}
+              placeholder="0000"
+            />
+          </div>
+        </Field>
+
+        <Field label="Staff PIN (POS Only)">
+          <div className="relative">
+            <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              required 
+              type={showPins ? "text" : "password"} 
+              maxLength={4}
+              pattern="\d{4}"
+              value={form.staffPin} 
+              onChange={(e) => setForm({ ...form, staffPin: e.target.value.replace(/\D/g, '') })} 
+              className={`${inputCls} pl-10 tracking-[0.5em] font-black text-lg`}
+              placeholder="1234"
+            />
+          </div>
+        </Field>
+
+        <div className="pt-4">
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
+          >
+            {saved ? <><Check className="w-4 h-4 text-green-400" /> PINs Updated!</> : "Update PINs"}
+          </button>
+        </div>
+      </form>
+
+      <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+        <div className="flex gap-3">
+          <Shield className="w-5 h-5 text-orange-600 shrink-0" />
+          <div className="text-xs text-orange-800 space-y-1">
+            <p className="font-bold">Security Tip:</p>
+            <p>Change your PINs regularly to keep your sales data safe. Avoid using simple PINs like 1234 or 1111 for Manager access.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

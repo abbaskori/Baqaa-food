@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Delete, ChevronRight, Fingerprint } from "lucide-react";
+import { useSecuritySettings } from "@/hooks/use-data";
 
 interface LoginProps {
   onLogin: (role: 'admin' | 'staff') => void;
@@ -9,10 +10,7 @@ interface LoginProps {
 export default function LoginPage({ onLogin }: LoginProps) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
-
-  // Default PINs - In a real app, these would come from Supabase
-  const ADMIN_PIN = "0000";
-  const STAFF_PIN = "1234";
+  const { data: security } = useSecuritySettings();
 
   const handleKeyPress = (val: string) => {
     if (pin.length < 4) {
@@ -25,9 +23,9 @@ export default function LoginPage({ onLogin }: LoginProps) {
   };
 
   const verifyPin = (inputPin: string) => {
-    if (inputPin === ADMIN_PIN) {
+    if (inputPin === security.adminPin) {
       onLogin('admin');
-    } else if (inputPin === STAFF_PIN) {
+    } else if (inputPin === security.staffPin) {
       onLogin('staff');
     } else {
       setError(true);

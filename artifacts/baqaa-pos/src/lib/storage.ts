@@ -10,6 +10,17 @@ const KEYS = {
   ORDERS: "baqaa_orders",
   CUSTOMERS: "baqaa_customers",
   BILL_COUNTER: "baqaa_bill_counter",
+  SECURITY: "baqaa_security_settings",
+};
+
+export interface SecuritySettings {
+  adminPin: string;
+  staffPin: string;
+}
+
+const DEFAULT_SECURITY: SecuritySettings = {
+  adminPin: "0000",
+  staffPin: "1234",
 };
 
 export interface ShopInfo {
@@ -139,6 +150,18 @@ function set<T>(key: string, value: T) {
 export const StorageAPI = {
   getShopInfo: () => get<ShopInfo>(KEYS.SHOP_INFO, DEFAULT_SHOP_INFO),
   setShopInfo: (info: ShopInfo) => set(KEYS.SHOP_INFO, info),
+
+  getSecuritySettings: () => get<SecuritySettings>(KEYS.SECURITY, DEFAULT_SECURITY),
+  setSecuritySettings: (settings: SecuritySettings) => {
+    set(KEYS.SECURITY, settings);
+    // Cloud Sync
+    supabase.from('settings').upsert({
+      id: 'main',
+      admin_pin: settings.adminPin,
+      staff_pin: settings.staffPin,
+      updated_at: new Date().toISOString()
+    }).then();
+  },
 
   getCategories: () => get<Category[]>(KEYS.CATEGORIES, []),
   setCategories: (cats: Category[]) => {
@@ -280,6 +303,12 @@ export const StorageAPI = {
       const { data: cats } = await supabase.from('categories').select('*');
       const { data: items } = await supabase.from('menu_items').select('*');
       const { data: customers } = await supabase.from('customers').select('*');
+      const { data: settings } = await supabase.from('settings').select('*').eq('id', 'main').single();
+
+      if (settings) localStorage.setItem(KEYS.SECURITY, JSON.stringify({
+        adminPin: settings.admin_pin,
+        staffPin: settings.staff_pin
+      }));
 
       if (orders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
         ...o,
