@@ -74,7 +74,7 @@ function loadTabs(): { tabs: BillTab[]; activeTabId: string } {
 export default function POS() {
   const { data: categories } = useCategories();
   const { data: menuItems } = useMenuItems();
-  const { createOrder } = useOrders();
+  const { createOrder, updateOrder } = useOrders();
   const { data: customers } = useCustomers();
   const { data: shop } = useShopInfo();
 
@@ -167,7 +167,8 @@ export default function POS() {
 
   const handleCheckout = () => {
     if (activeTab.cart.length === 0) return;
-    const order = createOrder({
+    
+    const orderData = {
       items: activeTab.cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.qty, amount: i.price * i.qty })),
       subtotal,
       discountType: activeTab.discountType,
@@ -177,8 +178,16 @@ export default function POS() {
       paymentMethod: activeTab.paymentMethod,
       customerName: activeTab.customerName.trim(),
       customerPhone: activeTab.customerPhone.trim(),
-      createdAt: new Date().toISOString(),
-    });
+      createdAt: activeTab.completedOrder?.createdAt || new Date().toISOString(),
+    };
+
+    let order;
+    if (activeTab.completedOrder) {
+      order = updateOrder(activeTab.completedOrder.id, orderData);
+    } else {
+      order = createOrder(orderData);
+    }
+
     updateTab({ completedOrder: order, viewMode: "receipt", label: activeTab.customerName.trim() || "Guest" });
   };
 

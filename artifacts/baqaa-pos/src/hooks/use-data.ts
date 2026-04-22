@@ -55,7 +55,12 @@ export function useMenuItems() {
 
 export function useOrders() {
   const orders = useStorageData(StorageAPI.getOrders);
-  return { data: orders, createOrder: StorageAPI.addOrder, resetData: StorageAPI.resetData };
+  return { 
+    data: orders, 
+    createOrder: StorageAPI.addOrder, 
+    updateOrder: StorageAPI.updateOrder,
+    resetData: StorageAPI.resetData 
+  };
 }
 
 export function useCustomers() {

@@ -186,6 +186,22 @@ export const StorageAPI = {
     return newOrder;
   },
 
+  updateOrder: (id: string, updates: Omit<Order, 'id' | 'billNumber'>) => {
+    const orders = StorageAPI.getOrders();
+    const index = orders.findIndex(o => o.id === id);
+    if (index === -1) return null;
+
+    const updatedOrder: Order = {
+      ...orders[index],
+      ...updates,
+      id, // ensure id remains same
+    };
+
+    orders[index] = updatedOrder;
+    set(KEYS.ORDERS, orders);
+    return updatedOrder;
+  },
+
   getCustomers: () => get<Customer[]>(KEYS.CUSTOMERS, []),
   
   resetData: () => {
