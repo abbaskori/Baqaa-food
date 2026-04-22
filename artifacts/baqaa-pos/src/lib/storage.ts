@@ -299,18 +299,42 @@ export const StorageAPI = {
   // Fetch all data from cloud (for new devices)
   fetchCloudData: async () => {
     try {
-      const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       const { data: cats } = await supabase.from('categories').select('*');
       const { data: items } = await supabase.from('menu_items').select('*');
+      const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       const { data: customers } = await supabase.from('customers').select('*');
       const { data: settings } = await supabase.from('settings').select('*').eq('id', 'main').single();
+
+      // If cloud is empty but local has data, upload local to cloud
+      const localCats = get<Category[]>(KEYS.CATEGORIES, []);
+      if ((!cats || cats.length === 0) && localCats.length > 0) {
+        console.log("Cloud empty, migrating local data...");
+        StorageAPI.setCategories(localCats);
+        StorageAPI.setMenuItems(get<MenuItem[]>(KEYS.MENU_ITEMS, []));
+        return;
+      }
 
       if (settings) localStorage.setItem(KEYS.SECURITY, JSON.stringify({
         adminPin: settings.admin_pin,
         staffPin: settings.staff_pin
       }));
 
-      if (orders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
+      if (cats && cats.length > 0) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({
+        id: c.id,
+        name: c.name,
+        createdAt: c.created_at
+      }))));
+
+      if (items && items.length > 0) localStorage.setItem(KEYS.MENU_ITEMS, JSON.stringify(items.map(i => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        categoryId: i.category_id,
+        image: i.image,
+        createdAt: i.created_at
+      }))));
+
+      if (orders && orders.length > 0) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
         ...o,
         billNumber: o.bill_number,
         discountType: o.discount_type,
@@ -323,22 +347,7 @@ export const StorageAPI = {
         synced: true
       }))));
 
-      if (cats) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({
-        id: c.id,
-        name: c.name,
-        createdAt: c.created_at
-      }))));
-
-      if (items) localStorage.setItem(KEYS.MENU_ITEMS, JSON.stringify(items.map(i => ({
-        id: i.id,
-        name: i.name,
-        price: i.price,
-        categoryId: i.category_id,
-        image: i.image,
-        createdAt: i.created_at
-      }))));
-
-      if (customers) localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers.map(c => ({
+      if (customers && customers.length > 0) localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers.map(c => ({
         id: c.id,
         name: c.name,
         phone: c.phone,
