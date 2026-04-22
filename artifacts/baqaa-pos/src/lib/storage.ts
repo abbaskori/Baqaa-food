@@ -275,47 +275,85 @@ export const StorageAPI = {
 
   // Fetch all data from cloud (for new devices)
   fetchCloudData: async () => {
-    const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    const { data: cats } = await supabase.from('categories').select('*');
-    const { data: items } = await supabase.from('menu_items').select('*');
-    const { data: customers } = await supabase.from('customers').select('*');
+    try {
+      const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      const { data: cats } = await supabase.from('categories').select('*');
+      const { data: items } = await supabase.from('menu_items').select('*');
+      const { data: customers } = await supabase.from('customers').select('*');
 
-    if (orders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
-      ...o,
-      billNumber: o.bill_number,
-      discountType: o.discount_type,
-      discountValue: o.discount_value,
-      discountAmount: o.discount_amount,
-      paymentMethod: o.payment_method,
-      customerName: o.customer_name,
-      customerPhone: o.customer_phone,
-      createdAt: o.created_at
-    }))));
+      if (orders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
+        ...o,
+        billNumber: o.bill_number,
+        discountType: o.discount_type,
+        discountValue: o.discount_value,
+        discountAmount: o.discount_amount,
+        paymentMethod: o.payment_method,
+        customerName: o.customer_name,
+        customerPhone: o.customer_phone,
+        createdAt: o.created_at,
+        synced: true
+      }))));
 
-    if (cats) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({
-      id: c.id,
-      name: c.name,
-      createdAt: c.created_at
-    }))));
+      if (cats) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({
+        id: c.id,
+        name: c.name,
+        createdAt: c.created_at
+      }))));
 
-    if (items) localStorage.setItem(KEYS.MENU_ITEMS, JSON.stringify(items.map(i => ({
-      id: i.id,
-      name: i.name,
-      price: i.price,
-      categoryId: i.category_id,
-      image: i.image,
-      createdAt: i.created_at
-    }))));
+      if (items) localStorage.setItem(KEYS.MENU_ITEMS, JSON.stringify(items.map(i => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        categoryId: i.category_id,
+        image: i.image,
+        createdAt: i.created_at
+      }))));
 
-    if (customers) localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers.map(c => ({
-      id: c.id,
-      name: c.name,
-      phone: c.phone,
-      createdAt: c.created_at,
-      lastOrderDate: c.last_order_date
-    }))));
+      if (customers) localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers.map(c => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        createdAt: c.created_at,
+        lastOrderDate: c.last_order_date
+      }))));
 
-    emitChange();
+      emitChange();
+    } catch (e) {
+      console.error("Cloud fetch failed, using local data", e);
+    }
+  },
+
+  // Sync any orders that were created while offline
+  syncOfflineOrders: async () => {
+    const orders = StorageAPI.getOrders();
+    const unsynced = orders.filter((o: any) => !o.synced);
+    
+    if (unsynced.length === 0) return;
+
+    console.log(`Syncing ${unsynced.length} offline orders...`);
+
+    for (const order of unsynced) {
+      const { error } = await supabase.from('orders').upsert({
+        id: order.id,
+        bill_number: order.billNumber,
+        items: order.items,
+        subtotal: order.subtotal,
+        discount_type: order.discountType,
+        discount_value: order.discountValue,
+        discount_amount: order.discountAmount,
+        total: order.total,
+        payment_method: order.paymentMethod,
+        customer_name: order.customerName,
+        customer_phone: order.customerPhone,
+        created_at: order.createdAt
+      });
+
+      if (!error) {
+        order.synced = true;
+      }
+    }
+
+    set(KEYS.ORDERS, orders);
   },
   
   resetData: () => {
@@ -326,3 +364,7 @@ export const StorageAPI = {
   }
 };
 
+// Auto-sync when coming back online
+window.addEventListener('online', () => StorageAPI.syncOfflineOrders());
+// Also try syncing every 1 minute just in case
+setInterval(() => StorageAPI.syncOfflineOrders(), 60000);
