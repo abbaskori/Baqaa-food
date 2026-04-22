@@ -1,11 +1,17 @@
-import { Link, useRoute } from "wouter";
-import { Store, BarChart3, Settings } from "lucide-react";
+import { Link, useRoute, useLocation } from "wouter";
+import { Store, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useShopInfo } from "@/hooks/use-data";
 
-export function TopNav() {
+export function TopNav({ role }: { role: 'admin' | 'staff' }) {
   const { data: shop } = useShopInfo();
+  const [, setLocation] = useLocation();
   const logoSrc = shop.logo || `${import.meta.env.BASE_URL}baqaa-logo.png`;
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('baqaa_session');
+    window.location.reload(); // Quick way to reset state
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 no-print">
@@ -26,9 +32,22 @@ export function TopNav() {
         </div>
 
         <div className="flex items-center gap-1">
-          <NavLink href="/admin" icon={<Settings className="w-4 h-4" />} label="Admin" />
-          <NavLink href="/analytics" icon={<BarChart3 className="w-4 h-4" />} label="Analytics" />
+          {role === 'admin' && (
+            <>
+              <NavLink href="/admin" icon={<Settings className="w-4 h-4" />} label="Admin" />
+              <NavLink href="/analytics" icon={<BarChart3 className="w-4 h-4" />} label="Analytics" />
+            </>
+          )}
           <NavLink href="/" exact icon={<Store className="w-4 h-4" />} label="POS" />
+          <div className="w-[1px] h-6 bg-gray-200 mx-1" />
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-all"
+            title="Lock POS"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Lock</span>
+          </button>
         </div>
       </div>
     </nav>
@@ -53,13 +72,14 @@ function NavLink({ href, icon, label, exact }: { href: string; icon: React.React
   );
 }
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children, role }: { children: React.ReactNode; role: 'admin' | 'staff' }) {
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-      <TopNav />
+      <TopNav role={role} />
       <main className="flex-1 flex flex-col overflow-hidden relative min-h-0">
         {children}
       </main>
     </div>
   );
 }
+
