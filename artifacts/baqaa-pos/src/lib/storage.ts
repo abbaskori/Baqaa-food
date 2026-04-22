@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from './supabase';
 
 const DATA_VERSION = "1.0.0";
 const KEYS = {
@@ -140,10 +141,33 @@ export const StorageAPI = {
   setShopInfo: (info: ShopInfo) => set(KEYS.SHOP_INFO, info),
 
   getCategories: () => get<Category[]>(KEYS.CATEGORIES, []),
-  setCategories: (cats: Category[]) => set(KEYS.CATEGORIES, cats),
+  setCategories: (cats: Category[]) => {
+    set(KEYS.CATEGORIES, cats);
+    // Cloud Sync
+    cats.forEach(c => {
+      supabase.from('categories').upsert({
+        id: c.id,
+        name: c.name,
+        created_at: c.createdAt
+      }).then();
+    });
+  },
   
   getMenuItems: () => get<MenuItem[]>(KEYS.MENU_ITEMS, []),
-  setMenuItems: (items: MenuItem[]) => set(KEYS.MENU_ITEMS, items),
+  setMenuItems: (items: MenuItem[]) => {
+    set(KEYS.MENU_ITEMS, items);
+    // Cloud Sync
+    items.forEach(i => {
+      supabase.from('menu_items').upsert({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        category_id: i.categoryId,
+        image: i.image,
+        created_at: i.createdAt
+      }).then();
+    });
+  },
 
   getOrders: () => get<Order[]>(KEYS.ORDERS, []),
   addOrder: (orderWithoutIdAndBill: Omit<Order, 'id' | 'billNumber'>) => {
@@ -161,26 +185,54 @@ export const StorageAPI = {
     set(KEYS.ORDERS, orders);
     localStorage.setItem(KEYS.BILL_COUNTER, (currentBill + 1).toString());
 
+    // Cloud Sync
+    supabase.from('orders').upsert({
+      id: newOrder.id,
+      bill_number: newOrder.billNumber,
+      items: newOrder.items,
+      subtotal: newOrder.subtotal,
+      discount_type: newOrder.discountType,
+      discount_value: newOrder.discountValue,
+      discount_amount: newOrder.discountAmount,
+      total: newOrder.total,
+      payment_method: newOrder.paymentMethod,
+      customer_name: newOrder.customerName,
+      customer_phone: newOrder.customerPhone,
+      created_at: newOrder.createdAt
+    }).then();
+
     // Update customer
     if (newOrder.customerName) {
       const customers = StorageAPI.getCustomers();
       const existing = customers.find(c => c.phone === newOrder.customerPhone && newOrder.customerPhone !== "") || 
                        customers.find(c => c.name.toLowerCase() === newOrder.customerName.toLowerCase());
       
+      let customer;
       if (existing) {
         existing.lastOrderDate = newOrder.createdAt;
         if (newOrder.customerPhone) existing.phone = newOrder.customerPhone;
+        customer = existing;
         set(KEYS.CUSTOMERS, customers);
       } else {
-        customers.push({
+        customer = {
           id: uuidv4(),
           name: newOrder.customerName,
           phone: newOrder.customerPhone,
           createdAt: newOrder.createdAt,
           lastOrderDate: newOrder.createdAt
-        });
+        };
+        customers.push(customer);
         set(KEYS.CUSTOMERS, customers);
       }
+      
+      // Cloud Sync Customer
+      supabase.from('customers').upsert({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        created_at: customer.createdAt,
+        last_order_date: customer.lastOrderDate
+      }).then();
     }
 
     return newOrder;
@@ -194,15 +246,77 @@ export const StorageAPI = {
     const updatedOrder: Order = {
       ...orders[index],
       ...updates,
-      id, // ensure id remains same
+      id,
     };
 
     orders[index] = updatedOrder;
     set(KEYS.ORDERS, orders);
+
+    // Cloud Sync
+    supabase.from('orders').upsert({
+      id: updatedOrder.id,
+      bill_number: updatedOrder.billNumber,
+      items: updatedOrder.items,
+      subtotal: updatedOrder.subtotal,
+      discount_type: updatedOrder.discountType,
+      discount_value: updatedOrder.discountValue,
+      discount_amount: updatedOrder.discountAmount,
+      total: updatedOrder.total,
+      payment_method: updatedOrder.paymentMethod,
+      customer_name: updatedOrder.customerName,
+      customer_phone: updatedOrder.customerPhone,
+      created_at: updatedOrder.createdAt
+    }).then();
+
     return updatedOrder;
   },
 
   getCustomers: () => get<Customer[]>(KEYS.CUSTOMERS, []),
+
+  // Fetch all data from cloud (for new devices)
+  fetchCloudData: async () => {
+    const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    const { data: cats } = await supabase.from('categories').select('*');
+    const { data: items } = await supabase.from('menu_items').select('*');
+    const { data: customers } = await supabase.from('customers').select('*');
+
+    if (orders) localStorage.setItem(KEYS.ORDERS, JSON.stringify(orders.map(o => ({
+      ...o,
+      billNumber: o.bill_number,
+      discountType: o.discount_type,
+      discountValue: o.discount_value,
+      discountAmount: o.discount_amount,
+      paymentMethod: o.payment_method,
+      customerName: o.customer_name,
+      customerPhone: o.customer_phone,
+      createdAt: o.created_at
+    }))));
+
+    if (cats) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({
+      id: c.id,
+      name: c.name,
+      createdAt: c.created_at
+    }))));
+
+    if (items) localStorage.setItem(KEYS.MENU_ITEMS, JSON.stringify(items.map(i => ({
+      id: i.id,
+      name: i.name,
+      price: i.price,
+      categoryId: i.category_id,
+      image: i.image,
+      createdAt: i.created_at
+    }))));
+
+    if (customers) localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers.map(c => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      createdAt: c.created_at,
+      lastOrderDate: c.last_order_date
+    }))));
+
+    emitChange();
+  },
   
   resetData: () => {
     localStorage.setItem(KEYS.ORDERS, "[]");
@@ -211,3 +325,4 @@ export const StorageAPI = {
     emitChange();
   }
 };
+
