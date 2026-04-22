@@ -4,7 +4,7 @@ import { Lock, Delete, ChevronRight, Fingerprint } from "lucide-react";
 import { useSecuritySettings } from "@/hooks/use-data";
 
 interface LoginProps {
-  onLogin: (role: 'admin' | 'staff') => void;
+  onLogin: (role: 'admin' | 'staff' | 'manager') => void;
 }
 
 export default function LoginPage({ onLogin }: LoginProps) {
@@ -27,6 +27,8 @@ export default function LoginPage({ onLogin }: LoginProps) {
       onLogin('admin');
     } else if (inputPin === security.staffPin) {
       onLogin('staff');
+    } else if (inputPin === security.managerPin) {
+      onLogin('manager');
     } else {
       setError(true);
       setTimeout(() => {

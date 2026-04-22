@@ -356,6 +356,22 @@ function SecurityTab() {
           </div>
         </Field>
 
+        <Field label="Manager PIN (Analytics Only)">
+          <div className="relative">
+            <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              required 
+              type={showPins ? "text" : "password"} 
+              maxLength={4}
+              pattern="\d{4}"
+              value={form.managerPin} 
+              onChange={(e) => setForm({ ...form, managerPin: e.target.value.replace(/\D/g, '') })} 
+              className={`${inputCls} pl-10 tracking-[0.5em] font-black text-lg`}
+              placeholder="5555"
+            />
+          </div>
+        </Field>
+
         <Field label="Staff PIN (POS Only)">
           <div className="relative">
             <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

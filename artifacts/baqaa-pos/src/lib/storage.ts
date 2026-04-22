@@ -16,11 +16,13 @@ const KEYS = {
 export interface SecuritySettings {
   adminPin: string;
   staffPin: string;
+  managerPin: string;
 }
 
 const DEFAULT_SECURITY: SecuritySettings = {
   adminPin: "0000",
   staffPin: "1234",
+  managerPin: "5555",
 };
 
 export interface ShopInfo {
@@ -159,6 +161,7 @@ export const StorageAPI = {
       id: 'main',
       admin_pin: settings.adminPin,
       staff_pin: settings.staffPin,
+      manager_pin: settings.managerPin,
       updated_at: new Date().toISOString()
     }).then();
   },
@@ -329,7 +332,8 @@ export const StorageAPI = {
 
       if (settings) localStorage.setItem(KEYS.SECURITY, JSON.stringify({
         adminPin: settings.admin_pin,
-        staffPin: settings.staff_pin
+        staffPin: settings.staff_pin,
+        managerPin: settings.manager_pin
       }));
 
       if (cats && cats.length > 0) localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(cats.map(c => ({

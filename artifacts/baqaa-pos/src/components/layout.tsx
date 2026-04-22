@@ -3,7 +3,7 @@ import { Store, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useShopInfo } from "@/hooks/use-data";
 
-export function TopNav({ role }: { role: 'admin' | 'staff' }) {
+export function TopNav({ role }: { role: 'admin' | 'staff' | 'manager' }) {
   const { data: shop } = useShopInfo();
   const [, setLocation] = useLocation();
   const logoSrc = shop.logo || `${import.meta.env.BASE_URL}baqaa-logo.png`;
@@ -27,18 +27,22 @@ export function TopNav({ role }: { role: 'admin' | 'staff' }) {
           />
           <div className="min-w-0 hidden sm:block">
             <h1 className="font-black text-base text-gray-900 leading-tight truncate">{shop.name}</h1>
-            <p className="text-xs text-gray-400 leading-none">Cashier Point of Sale</p>
+            <p className="text-xs text-gray-400 leading-none">
+              {role === 'manager' ? 'Manager Dashboard' : 'Cashier Point of Sale'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
           {role === 'admin' && (
-            <>
-              <NavLink href="/admin" icon={<Settings className="w-4 h-4" />} label="Admin" />
-              <NavLink href="/analytics" icon={<BarChart3 className="w-4 h-4" />} label="Analytics" />
-            </>
+            <NavLink href="/admin" icon={<Settings className="w-4 h-4" />} label="Admin" />
           )}
-          <NavLink href="/" exact icon={<Store className="w-4 h-4" />} label="POS" />
+          {(role === 'admin' || role === 'manager') && (
+            <NavLink href="/analytics" icon={<BarChart3 className="w-4 h-4" />} label="Analytics" />
+          )}
+          {role !== 'manager' && (
+            <NavLink href="/" exact icon={<Store className="w-4 h-4" />} label="POS" />
+          )}
           <div className="w-[1px] h-6 bg-gray-200 mx-1" />
           <button 
             onClick={handleLogout}
@@ -72,7 +76,8 @@ function NavLink({ href, icon, label, exact }: { href: string; icon: React.React
   );
 }
 
-export function AppLayout({ children, role }: { children: React.ReactNode; role: 'admin' | 'staff' }) {
+export function AppLayout({ children, role }: { children: React.ReactNode; role: 'admin' | 'staff' | 'manager' }) {
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <TopNav role={role} />

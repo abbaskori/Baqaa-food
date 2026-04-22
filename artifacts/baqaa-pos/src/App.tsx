@@ -15,25 +15,28 @@ import LoginPage from "@/pages/login";
 
 const queryClient = new QueryClient();
 
-function Router({ role }: { role: 'admin' | 'staff' }) {
+function Router({ role }: { role: 'admin' | 'staff' | 'manager' }) {
   const [location, setLocation] = useLocation();
 
-  // If staff tries to access restricted pages, redirect to POS
+  // Role-based access control
   useEffect(() => {
     if (role === 'staff' && (location === '/admin' || location === '/analytics')) {
       setLocation('/');
+    }
+    if (role === 'manager' && (location === '/' || location === '/admin')) {
+      setLocation('/analytics');
     }
   }, [location, role, setLocation]);
 
   return (
     <AppLayout role={role}>
       <Switch>
-        <Route path="/" component={POS} />
+        {role !== 'manager' && <Route path="/" component={POS} />}
+        {(role === 'admin' || role === 'manager') && (
+          <Route path="/analytics" component={Analytics} />
+        )}
         {role === 'admin' && (
-          <>
-            <Route path="/admin" component={Admin} />
-            <Route path="/analytics" component={Analytics} />
-          </>
+          <Route path="/admin" component={Admin} />
         )}
         <Route component={NotFound} />
       </Switch>
@@ -42,7 +45,7 @@ function Router({ role }: { role: 'admin' | 'staff' }) {
 }
 
 function App() {
-  const [auth, setAuth] = useState<{ role: 'admin' | 'staff' } | null>(null);
+  const [auth, setAuth] = useState<{ role: 'admin' | 'staff' | 'manager' } | null>(null);
 
   useEffect(() => {
     initializeStorage();
@@ -53,7 +56,7 @@ function App() {
     if (saved) setAuth(JSON.parse(saved));
   }, []);
 
-  const handleLogin = (role: 'admin' | 'staff') => {
+  const handleLogin = (role: 'admin' | 'staff' | 'manager') => {
     const session = { role };
     setAuth(session);
     sessionStorage.setItem('baqaa_session', JSON.stringify(session));
