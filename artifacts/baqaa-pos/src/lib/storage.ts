@@ -412,6 +412,26 @@ export const StorageAPI = {
     localStorage.setItem(KEYS.CUSTOMERS, "[]");
     localStorage.setItem(KEYS.BILL_COUNTER, "1001");
     emitChange();
+  },
+
+  resetCloudData: async () => {
+    try {
+      // 1. Clear Local Data
+      StorageAPI.resetData();
+
+      // 2. Clear Cloud Data (Deleting all rows)
+      await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Note: We don't delete categories/items to keep the menu, 
+      // but if user wants full reset, we can.
+      // For now, let's just reset orders and analytics as requested.
+      
+      emitChange();
+    } catch (e) {
+      console.error("Cloud reset failed", e);
+      throw e;
+    }
   }
 };
 

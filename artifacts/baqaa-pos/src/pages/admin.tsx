@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useShopInfo, useCategories, useMenuItems, useSecuritySettings } from "@/hooks/use-data";
+import { StorageAPI } from "@/lib/storage";
 import { Plus, Trash2, Edit2, Check, X, Store, Tag, Pizza, Upload, Image, Shield, Key, Eye, EyeOff } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -140,9 +141,36 @@ function ShopInfoTab() {
       >
         {saved ? <><Check className="w-4 h-4 text-green-400" /> Saved!</> : "Save Settings"}
       </button>
+
+      {/* Danger Zone */}
+      <div className="mt-12 pt-8 border-t border-red-100">
+        <h3 className="text-red-600 font-black text-lg mb-2 flex items-center gap-2">
+          <Trash2 className="w-5 h-5" /> Danger Zone
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">Wipe all sales history and customer data from the cloud. This cannot be undone.</p>
+        <button
+          type="button"
+          onClick={async () => {
+            if (window.confirm("ARE YOU SURE? This will delete all sales and analytics data FOREVER.") && 
+                window.confirm("LAST WARNING: This is permanent. Delete all data?")) {
+              try {
+                await StorageAPI.resetCloudData();
+                alert("All data has been reset successfully.");
+                window.location.reload();
+              } catch (e) {
+                alert("Failed to reset data. Check internet connection.");
+              }
+            }
+          }}
+          className="px-6 py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold hover:bg-red-600 hover:text-white active:scale-95 transition-all shadow-sm text-sm"
+        >
+          Reset Server Data (Orders & Analytics)
+        </button>
+      </div>
     </form>
   );
 }
+
 
 function CategoriesTab() {
   const { data: categories, addCategory, deleteCategory } = useCategories();
