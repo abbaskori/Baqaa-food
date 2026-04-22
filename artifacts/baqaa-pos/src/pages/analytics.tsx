@@ -68,10 +68,15 @@ export default function Analytics() {
       const hour = new Date(o.createdAt).getHours();
       hoursMap[hour] += o.total;
     });
-    const hourlyData = Object.entries(hoursMap).map(([hour, revenue]) => ({
-      hour: `${hour}:00`,
-      revenue
-    }));
+    const hourlyData = Object.entries(hoursMap).map(([hourStr, revenue]) => {
+      const h = parseInt(hourStr);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return {
+        hour: `${h12} ${ampm}`,
+        revenue
+      };
+    });
 
     // Category breakdown
     const catMap: Record<string, number> = {};
