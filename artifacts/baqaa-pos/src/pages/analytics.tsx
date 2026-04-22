@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
-import { useOrders } from "@/hooks/use-data";
+import { useOrders, useCategories } from "@/hooks/use-data";
 import { formatCurrency } from "@/lib/utils";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
-import { format, isToday, isThisWeek, isThisMonth, parseISO } from "date-fns";
-import { TrendingUp, CreditCard, Banknote, Users, AlertTriangle } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { format, isToday, isThisWeek, isThisMonth, parseISO, subDays, subWeeks, subMonths, isSameDay } from "date-fns";
+import { TrendingUp, CreditCard, Banknote, Users, AlertTriangle, Clock, Award, Star, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Analytics() {
   const { data: allOrders, resetData } = useOrders();
+  const { data: categories } = useCategories();
   const [timeFilter, setTimeFilter] = useState<'daily'|'weekly'|'monthly'|'all'|'custom'>('all');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
+  // Current period orders
   const orders = useMemo(() => {
     if(timeFilter === 'all') return allOrders;
     return allOrders.filter(o => {
@@ -23,27 +25,93 @@ export default function Analytics() {
     });
   }, [allOrders, timeFilter, selectedDate]);
 
+  // Previous period orders for trend comparison
+  const previousOrders = useMemo(() => {
+    if (timeFilter === 'all') return [];
+    return allOrders.filter(o => {
+      const d = parseISO(o.createdAt);
+      const now = new Date();
+      if (timeFilter === 'daily') return isSameDay(d, subDays(now, 1));
+      if (timeFilter === 'custom') return format(d, 'yyyy-MM-dd') === format(subDays(parseISO(selectedDate), 1), 'yyyy-MM-dd');
+      if (timeFilter === 'weekly') return d >= subWeeks(now, 2) && d < subWeeks(now, 1);
+      if (timeFilter === 'monthly') return d >= subMonths(now, 2) && d < subMonths(now, 1);
+      return false;
+    });
+  }, [allOrders, timeFilter, selectedDate]);
+
   const stats = useMemo(() => {
+    // Current stats
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-    const cashOrders = orders.filter(o => o.paymentMethod === 'Cash');
-    const onlineOrders = orders.filter(o => o.paymentMethod === 'Online');
     const uniqueCustomers = new Set(orders.map(o => o.customerPhone || o.customerName)).size;
+    
+    // Previous stats for trends
+    const prevRevenue = previousOrders.reduce((sum, o) => sum + o.total, 0);
+    const revenueTrend = prevRevenue === 0 ? 0 : ((totalRevenue - prevRevenue) / prevRevenue) * 100;
+    const prevOrdersCount = previousOrders.length;
+    const ordersTrend = prevOrdersCount === 0 ? 0 : ((orders.length - prevOrdersCount) / prevOrdersCount) * 100;
+
+    // Top Items
+    const itemsMap: Record<string, {name: string, qty: number, revenue: number}> = {};
+    orders.forEach(o => {
+      o.items.forEach(i => {
+        if (!itemsMap[i.name]) itemsMap[i.name] = { name: i.name, qty: 0, revenue: 0 };
+        itemsMap[i.name].qty += i.quantity;
+        itemsMap[i.name].revenue += i.amount;
+      });
+    });
+    const topItems = Object.values(itemsMap).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+    // Peak Hours
+    const hoursMap: Record<number, number> = {};
+    for (let i = 0; i < 24; i++) hoursMap[i] = 0;
+    orders.forEach(o => {
+      const hour = new Date(o.createdAt).getHours();
+      hoursMap[hour] += o.total;
+    });
+    const hourlyData = Object.entries(hoursMap).map(([hour, revenue]) => ({
+      hour: `${hour}:00`,
+      revenue
+    }));
+
+    // Category breakdown
+    const catMap: Record<string, number> = {};
+    orders.forEach(o => {
+      o.items.forEach(i => {
+        // Find category name (mock for now or join if available)
+        // Since we don't have catId in OrderItem, we'll use a simple fallback
+        // In a real app we'd join with menuItems
+        catMap['Food'] = (catMap['Food'] || 0) + i.amount;
+      });
+    });
+
+    // Customer Loyalty
+    const customerOrders: Record<string, number> = {};
+    allOrders.forEach(o => {
+      const key = o.customerPhone || o.customerName;
+      if (key) customerOrders[key] = (customerOrders[key] || 0) + 1;
+    });
+    const repeatCustomers = Object.values(customerOrders).filter(count => count > 1).length;
+    const repeatRate = uniqueCustomers === 0 ? 0 : (repeatCustomers / uniqueCustomers) * 100;
 
     return {
       totalOrders: orders.length,
       totalRevenue,
       avgOrderValue: orders.length ? totalRevenue / orders.length : 0,
       uniqueCustomers,
-      cashRevenue: cashOrders.reduce((sum, o) => sum + o.total, 0),
-      onlineRevenue: onlineOrders.reduce((sum, o) => sum + o.total, 0),
-      cashCount: cashOrders.length,
-      onlineCount: onlineOrders.length,
+      revenueTrend,
+      ordersTrend,
+      topItems,
+      hourlyData,
+      repeatCustomers,
+      repeatRate,
+      cashRevenue: orders.filter(o => o.paymentMethod === 'Cash').reduce((sum, o) => sum + o.total, 0),
+      onlineRevenue: orders.filter(o => o.paymentMethod === 'Online').reduce((sum, o) => sum + o.total, 0),
     };
-  }, [orders]);
+  }, [orders, previousOrders, allOrders]);
 
   const pieData = [
-    { name: 'Cash', value: stats.cashRevenue, color: '#f97316' }, // orange-500
-    { name: 'Online', value: stats.onlineRevenue, color: '#ec4899' }, // pink-500
+    { name: 'Cash', value: stats.cashRevenue, color: '#f97316' },
+    { name: 'Online', value: stats.onlineRevenue, color: '#ec4899' },
   ].filter(d => d.value > 0);
 
   const exportCSV = () => {
@@ -110,16 +178,108 @@ export default function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatCard title="Total Revenue" value={formatCurrency(stats.totalRevenue)} icon={<TrendingUp className="text-green-500 w-6 h-6" />} color="bg-green-50" />
-          <StatCard title="Total Orders" value={stats.totalOrders} icon={<Banknote className="text-blue-500 w-6 h-6" />} color="bg-blue-50" />
-          <StatCard title="Avg Order Value" value={formatCurrency(stats.avgOrderValue)} icon={<CreditCard className="text-purple-500 w-6 h-6" />} color="bg-purple-50" />
-          <StatCard title="Customers" value={stats.uniqueCustomers} icon={<Users className="text-orange-500 w-6 h-6" />} color="bg-orange-50" />
+          <StatCard 
+            title="Total Revenue" 
+            value={formatCurrency(stats.totalRevenue)} 
+            icon={<TrendingUp className="text-green-500 w-6 h-6" />} 
+            color="bg-green-50" 
+            trend={stats.revenueTrend}
+          />
+          <StatCard 
+            title="Total Orders" 
+            value={stats.totalOrders} 
+            icon={<Banknote className="text-blue-500 w-6 h-6" />} 
+            color="bg-blue-50" 
+            trend={stats.ordersTrend}
+          />
+          <StatCard 
+            title="Avg Order Value" 
+            value={formatCurrency(stats.avgOrderValue)} 
+            icon={<CreditCard className="text-purple-500 w-6 h-6" />} 
+            color="bg-purple-50" 
+          />
+          <StatCard 
+            title="Repeat Customers" 
+            value={stats.repeatCustomers} 
+            icon={<Users className="text-orange-500 w-6 h-6" />} 
+            color="bg-orange-50" 
+            subtitle={`${stats.repeatRate.toFixed(1)}% loyalty rate`}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Charts */}
+          {/* Peak Hours Chart */}
+          <div className="lg:col-span-2 bg-white dark:bg-card rounded-3xl p-6 shadow-xl shadow-black/5 border border-border/50 flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Clock className="w-5 h-5" /></div>
+              <h3 className="font-display font-bold text-lg text-foreground">Peak Hours (Revenue)</h3>
+            </div>
+            <div className="flex-1 min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="hour" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val}`} />
+                  <RechartsTooltip 
+                    cursor={{fill: '#f8fafc'}}
+                    formatter={(val: number) => [formatCurrency(val), 'Revenue']}
+                    contentStyle={{borderRadius:'12px', border:'none', boxShadow:'0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
+                  />
+                  <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top Selling Items */}
           <div className="lg:col-span-1 bg-white dark:bg-card rounded-3xl p-6 shadow-xl shadow-black/5 border border-border/50 flex flex-col">
-            <h3 className="font-display font-bold text-lg mb-6 text-foreground">Payment Methods</h3>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-yellow-50 rounded-lg text-yellow-600"><Star className="w-5 h-5" /></div>
+              <h3 className="font-display font-bold text-lg text-foreground">Top Selling Items</h3>
+            </div>
+            <div className="space-y-4 flex-1">
+              {stats.topItems.length > 0 ? stats.topItems.map((item, idx) => (
+                <div key={item.name} className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-end">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-muted-foreground w-4">{idx + 1}.</span>
+                      <span className="text-sm font-bold text-foreground">{item.name}</span>
+                    </div>
+                    <span className="text-xs font-black text-primary">{item.qty} units</span>
+                  </div>
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(item.qty / stats.topItems[0].qty) * 100}%` }}
+                      className="h-full bg-orange-500 rounded-full"
+                    />
+                  </div>
+                </div>
+              )) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground italic">No sales data yet</div>
+              )}
+            </div>
+            <div className="mt-6 pt-6 border-t border-border">
+              <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-4">
+                <Award className="w-4 h-4" /> REVENUE CONTRIBUTION
+              </div>
+              <div className="space-y-2">
+                {stats.topItems.slice(0,3).map(item => (
+                  <div key={item.name} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{item.name}</span>
+                    <span className="font-bold">{formatCurrency(item.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Methods Chart */}
+          <div className="lg:col-span-1 bg-white dark:bg-card rounded-3xl p-6 shadow-xl shadow-black/5 border border-border/50 flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-purple-50 rounded-lg text-purple-600"><CreditCard className="w-5 h-5" /></div>
+              <h3 className="font-display font-bold text-lg text-foreground">Payment Methods</h3>
+            </div>
             <div className="flex-1 min-h-[250px] relative">
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -139,12 +299,10 @@ export default function Analytics() {
               <div className="bg-orange-50 dark:bg-orange-950/30 p-4 rounded-2xl">
                 <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">Cash</p>
                 <p className="text-xl font-black text-orange-700 dark:text-orange-400">{formatCurrency(stats.cashRevenue)}</p>
-                <p className="text-xs text-orange-600/70 mt-1">{stats.cashCount} orders</p>
               </div>
               <div className="bg-pink-50 dark:bg-pink-950/30 p-4 rounded-2xl">
                 <p className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-1">Online</p>
                 <p className="text-xl font-black text-pink-700 dark:text-pink-400">{formatCurrency(stats.onlineRevenue)}</p>
-                <p className="text-xs text-pink-600/70 mt-1">{stats.onlineCount} orders</p>
               </div>
             </div>
           </div>
@@ -152,7 +310,7 @@ export default function Analytics() {
           {/* Table */}
           <div className="lg:col-span-2 bg-white dark:bg-card rounded-3xl p-6 shadow-xl shadow-black/5 border border-border/50 flex flex-col">
             <h3 className="font-display font-bold text-lg mb-4 text-foreground">Recent Orders</h3>
-            <div className="flex-1 overflow-x-auto">
+            <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[400px] scrollbar-thin">
               <table className="w-full text-left border-collapse whitespace-nowrap text-sm">
                 <thead>
                   <tr className="border-b-2 border-border text-muted-foreground font-semibold">
@@ -194,13 +352,22 @@ export default function Analytics() {
   );
 }
 
-function StatCard({title, value, icon, color}: any) {
+function StatCard({title, value, icon, color, trend, subtitle}: any) {
   return (
     <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-card p-6 rounded-3xl shadow-lg shadow-black/5 border border-border/50 flex items-center gap-4">
       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${color}`}>{icon}</div>
-      <div>
-        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
-        <p className="text-2xl sm:text-3xl font-black font-display mt-1 text-foreground">{value}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <p className="text-2xl sm:text-3xl font-black font-display mt-1 text-foreground">{value}</p>
+          {trend !== undefined && trend !== 0 && (
+            <div className={`flex items-center text-[10px] font-black px-1.5 py-0.5 rounded-full ${trend > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {trend > 0 ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
+              {Math.abs(trend).toFixed(0)}%
+            </div>
+          )}
+        </div>
+        {subtitle && <p className="text-[10px] font-bold text-muted-foreground mt-1">{subtitle}</p>}
       </div>
     </motion.div>
   );
