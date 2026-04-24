@@ -49,11 +49,16 @@ export default function App() {
           <div className="flex flex-col h-full w-full">
             {/* Header */}
             <header className="px-6 py-4 pt-14 glass flex items-center justify-between shrink-0 border-b-0 rounded-b-[2rem]">
-              <div>
-                <h1 className="text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                  Baqaa
-                </h1>
-                <p className="text-[10px] text-indigo-400 uppercase tracking-[0.2em] font-black">Analytics Hub</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center">
+                  <img src="/logo.png" alt="Baqaa" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                    Baqaa
+                  </h1>
+                  <p className="text-[10px] text-indigo-400 uppercase tracking-[0.2em] font-black">Analytics Hub</p>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <button 
@@ -166,9 +171,9 @@ function Login({ onUnlock }: { onUnlock: () => void }) {
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-24 h-24 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/20 mb-8 border border-white/20"
+          className="w-28 h-28 bg-white rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/20 mb-8 border border-white/20 p-4"
         >
-          <Fingerprint className="text-white w-12 h-12" />
+          <img src="/logo.png" alt="Baqaa Logo" className="w-full h-full object-contain" />
         </motion.div>
         <h1 className="text-4xl font-black text-white mb-2 font-display tracking-tighter">Baqaa</h1>
         <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">Secure Analytics</p>
