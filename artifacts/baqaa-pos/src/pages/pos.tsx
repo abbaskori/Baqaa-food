@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, ChevronDown, User, Phone, X, ArrowLeft, PlusCircle } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, ChevronDown, User, Phone, X, ArrowLeft, PlusCircle, Search } from "lucide-react";
 import { useCategories, useMenuItems, useOrders, useCustomers, useShopInfo } from "@/hooks/use-data";
 import { formatCurrency, getEmojiSvgUri, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -82,7 +82,21 @@ export default function POS() {
   const [tabs, setTabs] = useState<BillTab[]>(initial.tabs);
   const [activeTabId, setActiveTabId] = useState<string>(initial.activeTabId);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const tabBarRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Keyboard shortcut: Ctrl+F focuses search ────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // ── Persist tabs to localStorage on every change ────────────────────────────
   useEffect(() => { localStorage.setItem(LS_TABS, JSON.stringify(tabs)); }, [tabs]);
@@ -153,9 +167,17 @@ export default function POS() {
   const total = subtotal - discountAmount;
 
   const filteredItems = useMemo(() => {
-    if (activeTab.activeCategory === "All") return menuItems;
-    return menuItems.filter((i) => i.categoryId === activeTab.activeCategory);
-  }, [menuItems, activeTab.activeCategory]);
+    let items = menuItems;
+    if (activeTab.activeCategory !== "All") {
+      items = items.filter((i) => i.categoryId === activeTab.activeCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      items = items.filter((i) => i.name.toLowerCase().includes(q));
+    }
+    return items;
+  }, [menuItems, activeTab.activeCategory, searchQuery]);
+
 
   const customerSuggestions = useMemo(() => {
     if (!activeTab.customerName || activeTab.customerName.length < 1) return [];
@@ -265,7 +287,9 @@ export default function POS() {
       ) : (
 
         /* ── POS View ──────────────────────────────────────────────────────── */
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-gray-50">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-gray-50 dark:bg-gray-900">
+
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
           {/* Mobile menu/cart switcher */}
           <div className="lg:hidden flex border-b border-gray-200 bg-white shrink-0">
@@ -294,40 +318,72 @@ export default function POS() {
           <div className={cn("flex-1 flex-col min-h-0 overflow-hidden bg-white border-b lg:border-b-0 lg:border-r border-gray-200",
             activeTab.mobileView === "menu" ? "flex" : "hidden lg:flex")}>
             {/* Menu header */}
-            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-gray-100 shrink-0">
-              <h2 className="text-lg font-black text-gray-900">Menu</h2>
+            <div className="px-4 pt-3 pb-2 flex flex-col gap-2 border-b border-gray-100 dark:border-gray-800 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-black text-gray-900 dark:text-white">Menu</h2>
+                <div className="relative">
+                  <select
+                    value={activeTab.activeCategory}
+                    onChange={(e) => updateTab({ activeCategory: e.target.value })}
+                    className="appearance-none pl-3 pr-8 py-2 text-sm font-semibold border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:border-orange-400 cursor-pointer"
+                  >
+                    <option value="All">All Categories</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+              {/* Search Bar */}
               <div className="relative">
-                <select
-                  value={activeTab.activeCategory}
-                  onChange={(e) => updateTab({ activeCategory: e.target.value })}
-                  className="appearance-none pl-3 pr-8 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:border-orange-400 cursor-pointer"
-                >
-                  <option value="All">All Categories</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search menu... (Ctrl+F)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all placeholder:text-gray-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             </div>
             {/* Grid */}
             <div className="flex-1 overflow-y-auto p-3">
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-                {filteredItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => addToCart(item)}
-                    className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md hover:border-orange-300 transition-all active:scale-95 flex flex-col text-left w-full"
-                  >
-                    <div className="bg-orange-400 flex items-center justify-center h-24 sm:h-28 w-full">
-                      <img src={getEmojiSvgUri(item.image, "FB923C")} alt={item.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-sm" />
-                    </div>
-                    <div className="p-2 flex flex-col flex-1">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-800 leading-tight line-clamp-2 mb-1">{item.name}</p>
-                      <p className="text-green-600 font-bold text-sm">{formatCurrency(item.price)}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {filteredItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 py-12">
+                  <Search className="w-10 h-10 mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No items found{searchQuery ? ` for "${searchQuery}"` : ""}</p>
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")} className="mt-2 text-xs text-orange-500 font-bold hover:underline">Clear search</button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {filteredItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => addToCart(item)}
+                      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all active:scale-95 flex flex-col text-left w-full"
+                    >
+                      <div className="bg-orange-400 dark:bg-orange-500 flex items-center justify-center h-24 sm:h-28 w-full">
+                        <img src={getEmojiSvgUri(item.image, "FB923C")} alt={item.name}
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-sm" />
+                      </div>
+                      <div className="p-2 flex flex-col flex-1">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight line-clamp-2 mb-1">{item.name}</p>
+                        <p className="text-green-600 dark:text-green-400 font-bold text-sm">{formatCurrency(item.price)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -493,6 +549,7 @@ export default function POS() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>
