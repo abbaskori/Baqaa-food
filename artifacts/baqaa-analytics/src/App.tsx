@@ -11,6 +11,7 @@ import {
   Fingerprint
 } from "lucide-react";
 import { useAnalytics } from "./hooks/use-analytics";
+import { cn } from "./lib/utils";
 import Overview from "./pages/Overview";
 import Revenue from "./pages/Revenue";
 import Menu from "./pages/Menu";
