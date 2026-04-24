@@ -81,6 +81,21 @@ export default function App() {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto pb-32">
+              {error && (
+                <div className="p-6">
+                  <div className="glass p-6 rounded-3xl border-rose-500/20 bg-rose-500/5 text-center">
+                    <p className="text-rose-400 font-black text-sm mb-2">Connection Error</p>
+                    <p className="text-slate-400 text-xs mb-4">{error}</p>
+                    <button 
+                      onClick={() => refresh()}
+                      className="px-6 py-2 bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}

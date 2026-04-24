@@ -34,20 +34,31 @@ export function useAnalytics() {
 
   const fetchData = async () => {
     try {
+      console.log('Fetching analytics data...');
       setLoading(true);
+      setError(null);
+      
       const [ordersRes, customersRes] = await Promise.all([
         supabase.from('orders').select('*').order('created_at', { ascending: false }),
         supabase.from('customers').select('*')
       ]);
 
-      if (ordersRes.error) throw ordersRes.error;
-      if (customersRes.error) throw customersRes.error;
+      if (ordersRes.error) {
+        console.error('Orders fetch error:', ordersRes.error);
+        throw new Error(`Orders: ${ordersRes.error.message}`);
+      }
+      
+      if (customersRes.error) {
+        console.error('Customers fetch error:', customersRes.error);
+        throw new Error(`Customers: ${customersRes.error.message}`);
+      }
 
+      console.log(`Fetched ${ordersRes.data?.length} orders and ${customersRes.data?.length} customers.`);
       setOrders(ordersRes.data || []);
       setCustomers(customersRes.data || []);
     } catch (err: any) {
-      console.error('Error fetching analytics data:', err);
-      setError(err.message);
+      console.error('Analytics fetch failed:', err);
+      setError(err.message || 'Unknown connection error');
     } finally {
       setLoading(false);
     }
