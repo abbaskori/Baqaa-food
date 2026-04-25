@@ -297,6 +297,19 @@ export const StorageAPI = {
     return updatedOrder;
   },
 
+  deleteOrder: async (id: string) => {
+    const orders = StorageAPI.getOrders();
+    const filtered = orders.filter(o => o.id !== id);
+    set(KEYS.ORDERS, filtered);
+    
+    // Cloud Sync
+    try {
+      await supabase.from('orders').delete().eq('id', id);
+    } catch (e) {
+      console.error("Failed to delete order from cloud", e);
+    }
+  },
+
   getCustomers: () => get<Customer[]>(KEYS.CUSTOMERS, []),
 
   // Fetch all data from cloud (for new devices)

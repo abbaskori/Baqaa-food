@@ -3,11 +3,11 @@ import { useOrders, useCategories } from "@/hooks/use-data";
 import { formatCurrency } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { format, isToday, isThisWeek, isThisMonth, parseISO, subDays, subWeeks, subMonths, isSameDay } from "date-fns";
-import { TrendingUp, CreditCard, Banknote, Users, AlertTriangle, Clock, Award, Star, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, CreditCard, Banknote, Users, AlertTriangle, Clock, Award, Star, ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Analytics() {
-  const { data: allOrders, resetData } = useOrders();
+  const { data: allOrders, deleteOrder, resetData } = useOrders();
   const { data: categories } = useCategories();
   const [timeFilter, setTimeFilter] = useState<'daily'|'weekly'|'monthly'|'all'|'custom'>('all');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -137,6 +137,12 @@ export default function Analytics() {
       if(window.prompt("Type 'DELETE' to confirm") === "DELETE") {
         resetData();
       }
+    }
+  };
+
+  const handleDeleteOrder = (id: string, billNumber: number) => {
+    if(window.confirm(`Are you sure you want to delete Bill #${billNumber}? This cannot be undone.`)) {
+      deleteOrder(id);
     }
   };
 
@@ -323,7 +329,8 @@ export default function Analytics() {
                     <th className="py-3 px-4">Date & Time</th>
                     <th className="py-3 px-4">Customer</th>
                     <th className="py-3 px-4 text-right">Amount</th>
-                    <th className="py-3 px-4 text-center rounded-tr-xl">Method</th>
+                    <th className="py-3 px-4 text-center">Method</th>
+                    <th className="py-3 px-4 text-center rounded-tr-xl">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -343,6 +350,15 @@ export default function Analytics() {
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${o.paymentMethod==='Cash'?'bg-orange-100 text-orange-700':'bg-pink-100 text-pink-700'}`}>
                           {o.paymentMethod}
                         </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button 
+                          onClick={() => handleDeleteOrder(o.id, o.billNumber)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Bill"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}

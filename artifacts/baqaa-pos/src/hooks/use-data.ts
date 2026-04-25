@@ -59,6 +59,7 @@ export function useOrders() {
     data: orders, 
     createOrder: StorageAPI.addOrder, 
     updateOrder: StorageAPI.updateOrder,
+    deleteOrder: StorageAPI.deleteOrder,
     resetData: StorageAPI.resetData 
   };
 }
