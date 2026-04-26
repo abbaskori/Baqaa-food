@@ -699,17 +699,17 @@ function ReceiptView({ order, shop, logoSrc, onBack, onNewBill }: {
 
       {/* Receipt */}
       <div className="flex-1 flex items-start justify-center p-4 pt-6 overflow-y-auto">
-        <div id="print-receipt" className="bg-white w-full max-w-[480px] px-8 py-6 shadow-lg rounded-lg">
+        <div id="print-receipt" className="bg-white w-full max-w-[400px] px-6 py-8 shadow-lg rounded-lg">
 
           {/* Logo & Shop Header */}
-          <div className="text-center mb-5">
+          <div className="text-center mb-6">
             <img src={logoSrc} alt={shop.name}
-              className="receipt-logo h-16 w-auto mx-auto mb-2 object-contain"
+              className="receipt-logo h-16 w-auto mx-auto mb-4 object-contain"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <h2 className="text-xl font-black text-gray-900">{shop.name}</h2>
-            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{shop.address}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Contact: {shop.contact}</p>
-            {shop.gstin && <p className="text-xs text-gray-400 mt-0.5">GSTIN: {shop.gstin}</p>}
+            <h2 className="text-2xl font-black text-gray-900 leading-tight">{shop.name}</h2>
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed max-w-[250px] mx-auto">{shop.address}</p>
+            <p className="text-xs text-gray-500 mt-1 font-medium">Contact: {shop.contact}</p>
+            {shop.gstin && <p className="text-[10px] text-gray-400 mt-1 tracking-wider uppercase">GSTIN: {shop.gstin}</p>}
           </div>
 
           <hr className="border-gray-300 mb-4" />
