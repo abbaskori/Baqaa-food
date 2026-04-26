@@ -405,7 +405,14 @@ export default function POS() {
                   type="text"
                   placeholder="Customer Name (Optional)"
                   value={activeTab.customerName}
-                  onChange={(e) => { updateTab({ customerName: e.target.value }); setShowSuggestions(true); }}
+                  onChange={(e) => { 
+                    const name = e.target.value;
+                    updateTab({ 
+                      customerName: name, 
+                      label: name.trim() || `Bill ${tabs.findIndex(t => t.id === activeTabId) + 1}` 
+                    }); 
+                    setShowSuggestions(true); 
+                  }}
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
@@ -414,7 +421,14 @@ export default function POS() {
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-xl rounded-lg overflow-hidden z-50">
                     {customerSuggestions.map((c) => (
                       <button key={c.id}
-                        onClick={() => { updateTab({ customerName: c.name, customerPhone: c.phone || "" }); setShowSuggestions(false); }}
+                        onClick={() => { 
+                          updateTab({ 
+                            customerName: c.name, 
+                            customerPhone: c.phone || "",
+                            label: c.name
+                          }); 
+                          setShowSuggestions(false); 
+                        }}
                         className="w-full text-left px-3 py-2.5 hover:bg-orange-50 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors">
                         {c.name} {c.phone && <span className="text-gray-400 text-xs ml-1">{c.phone}</span>}
                       </button>
@@ -565,40 +579,50 @@ function printBill(order: any, shop: any, logoSrc: string) {
     : logoSrc.startsWith("http")
       ? logoSrc
       : window.location.origin + (logoSrc.startsWith("/") ? "" : "/") + logoSrc;
+
   const infoRows = [
     ["Date", format(new Date(order.createdAt), "dd/MM/yy")],
     ["Time", format(new Date(order.createdAt), "hh:mm a")],
     ...(order.customerPhone ? [["Phone", order.customerPhone]] : []),
-    ["Payment", order.paymentMethod],
+    ["Pay", order.paymentMethod],
   ];
 
   const itemRows = order.items.map((i: any) => `
     <tr>
-      <td style="padding:2px 1px;border-bottom:1px dotted #ccc;">${i.name}</td>
-      <td style="padding:2px 1px;text-align:center;border-bottom:1px dotted #ccc;">${i.quantity}</td>
-      <td style="padding:2px 1px;text-align:right;border-bottom:1px dotted #ccc;">${i.price.toFixed(2)}</td>
-      <td style="padding:2px 1px;text-align:right;font-weight:bold;border-bottom:1px dotted #ccc;">${i.amount.toFixed(2)}</td>
+      <td colspan="4" style="padding:2px 0 0 0;">${i.name}</td>
+    </tr>
+    <tr>
+      <td style="padding:0 0 2px 0;border-bottom:1px dotted #ccc;"></td>
+      <td style="padding:0 0 2px 0;text-align:center;border-bottom:1px dotted #ccc;">${i.quantity}</td>
+      <td style="padding:0 0 2px 0;text-align:right;border-bottom:1px dotted #ccc;">${i.price.toFixed(2)}</td>
+      <td style="padding:0 0 2px 0;text-align:right;font-weight:bold;border-bottom:1px dotted #ccc;">${i.amount.toFixed(2)}</td>
     </tr>`).join("");
 
   const html = `<!DOCTYPE html><html><head>
     <meta charset="utf-8"/>
     <title>Bill</title>
     <style>
-      @page { size: 80mm auto; margin: 4mm; }
+      @page { size: 58mm auto; margin: 0; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; background: #fff; width: 100%; }
+      body { 
+        font-family: 'Courier New', Courier, monospace; 
+        font-size: 10px; 
+        color: #000; 
+        background: #fff; 
+        width: 48mm; 
+        padding: 2mm;
+        margin: 0;
+      }
       .center { text-align: center; }
       .bold { font-weight: bold; }
-      .big { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-      .small { font-size: 10px; color: #333; }
-      hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-      table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding: 2px 1px; border-bottom: 1px solid #000; font-size: 10px; }
-      th:nth-child(2) { text-align: center; }
-      th:nth-child(3), th:nth-child(4) { text-align: right; }
-      .row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 11px; }
-      .total-row { font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; padding: 2px 0; }
-      img { max-height: 48px; display: block; margin: 0 auto 4px; }
+      .big { font-size: 13px; font-weight: bold; text-transform: uppercase; }
+      .small { font-size: 9px; }
+      hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      th { text-align: left; padding: 2px 0; border-bottom: 1px solid #000; font-size: 9px; }
+      .row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 10px; }
+      .total-row { font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; padding: 2px 0; border-top: 1px solid #000; margin-top: 2px; }
+      img { max-height: 35px; display: block; margin: 0 auto 4px; }
     </style>
   </head><body>
     <div class="center">
@@ -606,33 +630,33 @@ function printBill(order: any, shop: any, logoSrc: string) {
       <div class="big">${shop.name}</div>
       <div class="small">${shop.address}</div>
       <div class="small">Ph: ${shop.contact}</div>
-      ${shop.gstin ? `<div class="small">GSTIN: ${shop.gstin}</div>` : ""}
     </div>
     <hr/>
     ${infoRows.map(([l, v]) => `<div class="row"><span>${l}:</span><span>${v}</span></div>`).join("")}
     <hr/>
     <table>
       <thead><tr>
-        <th>Item</th><th style="text-align:center">Qty</th>
-        <th style="text-align:right">Rate</th><th style="text-align:right">Amt</th>
+        <th style="width:40%">Item</th><th style="width:15%;text-align:center">Qty</th>
+        <th style="width:20%;text-align:right">Rate</th><th style="width:25%;text-align:right">Amt</th>
       </tr></thead>
       <tbody>${itemRows}</tbody>
     </table>
+    <div style="margin-top:4px;">
+      <div class="row"><span>Subtotal</span><span>${order.subtotal.toFixed(2)}</span></div>
+      ${order.discountAmount > 0 ? `<div class="row"><span>Discount</span><span>-${order.discountAmount.toFixed(2)}</span></div>` : ""}
+      <div class="total-row"><span>TOTAL</span><span>Rs.${order.total.toFixed(2)}</span></div>
+    </div>
     <hr/>
-    <div class="row"><span>Subtotal</span><span>Rs.${order.subtotal.toFixed(2)}</span></div>
-    ${order.discountAmount > 0 ? `<div class="row"><span>Discount${order.discountType === "percentage" ? ` (${order.discountValue}%)` : ""}</span><span>-Rs.${order.discountAmount.toFixed(2)}</span></div>` : ""}
-    <hr/>
-    <div class="total-row"><span>TOTAL</span><span>Rs.${order.total.toFixed(2)}</span></div>
-    <hr/>
-    <div class="center bold" style="margin-top:6px;">** THANK YOU! VISIT AGAIN **</div>
+    <div class="center bold" style="margin-top:4px; font-size: 9px;">** THANK YOU! VISIT AGAIN **</div>
+    <div style="height: 10mm;"></div> <!-- Extra space for paper tear -->
   </body></html>`;
 
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const win = window.open(url, "_blank", "width=420,height=700");
+  const win = window.open(url, "_blank", "width=300,height=600");
   if (!win) { URL.revokeObjectURL(url); alert("Pop-up blocked! Please allow pop-ups for this site to print."); return; }
   win.addEventListener("load", () => {
-    setTimeout(() => { win.print(); win.close(); URL.revokeObjectURL(url); }, 300);
+    setTimeout(() => { win.print(); win.close(); URL.revokeObjectURL(url); }, 500);
   });
 }
 
@@ -658,7 +682,7 @@ function ReceiptView({ order, shop, logoSrc, onBack, onNewBill }: {
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
-          onClick={() => window.print()}
+          onClick={() => printBill(order, shop, logoSrc)}
           className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 active:scale-95 transition-all text-sm"
         >
           🖨️ Print
